@@ -55,7 +55,7 @@ class Player:
         # Make a play decision making
         velocity = random.uniform(0, self.max_vel)
         angle = self.max_angle
-        print("[{}] I'm going to move turning {}º at {}m/s".format(self.player_name, angle, velocity))
+        print("[{}] going to turn {} degrees at {} speed".format(self.player_name, angle, velocity))
         self.move(self.transform, velocity, angle)
 
     def move(self, transform_now, vel, angle):
