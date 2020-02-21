@@ -9,9 +9,10 @@ from visualization_msgs.msg import Marker
 from rws2020_msgs.msg import MakeAPlay
 from std_msgs.msg import String
 import sys
-#sys.path.append('../../../rws2020_moliveira/rws2020_lib/src')
-#from rws2020_lib.utils import movePlayer, randomizePlayerPose, getDistanceAndAngleToTarget
 
+
+# sys.path.append('../../../rws2020_moliveira/rws2020_lib/src')
+# from rws2020_lib.utils import movePlayer, randomizePlayerPose, getDistanceAndAngleToTarget
 
 
 class Player:
@@ -19,11 +20,11 @@ class Player:
         self.player_name = player_name
         self.map_size = 8
         self.max_angle = math.pi / 30
-        # Attributes initiated after...
         self.max_vel = 5
         self.transform = Transform()
         self.listener = tf.TransformListener()
         self.target = ""
+        self.my_team, self.prey_team, self.hunter_team = '', '', ''
 
         # Marker data
         self.m = Marker(ns=self.player_name, id=0, type=Marker.TEXT_VIEW_FACING, action=Marker.ADD)
@@ -39,12 +40,26 @@ class Player:
         self.m.text = "Nada a declarar"
         self.m.lifetime = rospy.Duration(3)
         self.pub_bocas = rospy.Publisher('/bocas', Marker, queue_size=1)
-        #self.pub_debug = rospy.Publisher('/t_debug', String, queue_size=1)
 
+        self.set_team_assignments()
+
+        # rospy.logwarn("I am {} and I am on the {} team. {} players are going to die"
+        #              .format(self.player_name, self.my_team, self.prey_team))
+        # rospy.loginfo("I am afraid of them {}".format(self.hunters))
+
+        rospy.Subscriber("make_a_play", MakeAPlay, self.callback_make_a_play)
+        self.br = tf.TransformBroadcaster()
+        self.transform = Transform()
+        self.transform.translation.x = random.uniform(-self.map_size / 2, self.map_size / 2)
+        self.transform.translation.y = random.uniform(-self.map_size / 2, self.map_size / 2)
+
+    def set_team_assignments(self):
+        """
+        Finds the player name in the team lists and defines whos hunter or prey
+        """
         red_team = rospy.get_param('red_team')
         blue_team = rospy.get_param('blue_team')
         green_team = rospy.get_param('green_team')
-        # print("Teams available:\nred: {}\nblue: {}\ngreen: {}".format(red_team, blue_team, green_team))
 
         if self.player_name in red_team:
             self.my_team, self.prey_team, self.hunter_team = 'red', 'green', 'blue'
@@ -58,37 +73,16 @@ class Player:
         else:
             rospy.logerr("My name ({}) is not in any team, I want to play!".format(self.player_name))
             exit(0)
-
         rospy.loginfo("Hi! I am {} from the {} team, let's have some fun!".format(self.player_name, self.my_team))
 
-        # rospy.logwarn("I am {} and I am on the {} team. {} players are going to die"
-        #              .format(self.player_name, self.my_team, self.prey_team))
-        # rospy.loginfo("I am afraid of them {}".format(self.hunters))
-
-        rospy.Subscriber("make_a_play", MakeAPlay, self.callback_make_a_play)
-        self.br = tf.TransformBroadcaster()
-        self.transform = Transform()
-        self.transform.translation.x = random.uniform(-self.map_size/2, self.map_size/2)
-        self.transform.translation.y = random.uniform(-self.map_size/2, self.map_size/2)
-
     def callback_make_a_play(self, msg):
-        # print("[MakeAPlay] the speed of cat is {}".format(msg.cat))
         self.max_vel = msg.cat
-        # Make a play decision making
         velocity = self.max_vel
-
+        angle = 0
         if self.target != "":
             distance, angle = self.get_distance_and_angle_to_target(self.target)
-            #self.pub_debug.publish("I going after target {}".format(self.target))
         elif msg.red_alive:  # PURSUIT MODE: Follow any blue player (only if there is at least one blue alive)
-            target = msg.red_alive[0]  # select the first alive blue player (I am hunting blue)
-            distance, angle = self.get_distance_and_angle_to_target(target)
-            #distance_short = 100
-            #for user in msg.red_alive:
-            #    distance, angle = self.get_distance_and_angle_to_target(user)
-            #    if distance <= distance_short:
-            #        self.target = user
-            #self.pub_debug.publish("I going after the closest target {}".format(self.target))
+            self.get_closest_player_from_team(msg.red_alive)
             if angle is None:
                 angle = 0
             # Marker
@@ -106,12 +100,25 @@ class Player:
         # Actually move the player
         self.move_player(self.br, self.player_name, self.transform, velocity, angle, velocity)
 
+    def get_closest_player_from_team(self, team):
+        """
+        Gets the closest player from the list of team members alive
+        @param team: list of string members names in team
+        """
+        max_distance = 100
+        for player in team:
+            distance, angle = self.get_distance_and_angle_to_target(player)
+            if distance <= max_distance:
+                max_distance = distance
+                self.target = player
+        # self.pub_debug.publish("I going after the closest target {}".format(self.target))
+
     def get_distance_and_angle_to_target(self, target_name, time=rospy.Time(0), max_time_to_wait=1.0):
         try:
             self.listener.waitForTransform(self.player_name, target_name, time, rospy.Duration(int(max_time_to_wait)))
             (trans, rot) = self.listener.lookupTransform(self.player_name, target_name, time)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException, tf.Exception):
-            #rospy.logwarn(my_name + ': Could not get transform from ' + self.player_name + ' to ' + target_name)
+            # rospy.logwarn(my_name + ': Could not get transform from ' + self.player_name + ' to ' + target_name)
             return None, None
 
         # compute distance and angle
