@@ -5,11 +5,13 @@ import numpy as np
 import rospy
 import tf
 from geometry_msgs.msg import Transform, Quaternion
+from visualization_msgs.msg import Marker
 from rws2020_msgs.msg import MakeAPlay
+from std_msgs.msg import String
 import sys
 #sys.path.append('../../../rws2020_moliveira/rws2020_lib/src')
 #from rws2020_lib.utils import movePlayer, randomizePlayerPose, getDistanceAndAngleToTarget
-#from std_msgs.msg import String
+
 
 
 class Player:
@@ -21,6 +23,23 @@ class Player:
         self.max_vel = 5
         self.transform = Transform()
         self.listener = tf.TransformListener()
+        self.target = ""
+
+        # Marker data
+        self.m = Marker(ns=self.player_name, id=0, type=Marker.TEXT_VIEW_FACING, action=Marker.ADD)
+        self.m.header.frame_id = "moliveira"
+        self.m.header.stamp = rospy.Time.now()
+        self.m.pose.position.y = 1
+        self.m.pose.orientation.w = 1.0
+        self.m.scale.z = 0.4
+        self.m.color.a = 1.0
+        self.m.color.r = 0.0
+        self.m.color.g = 0.0
+        self.m.color.b = 0.0
+        self.m.text = "Nada a declarar"
+        self.m.lifetime = rospy.Duration(3)
+        self.pub_bocas = rospy.Publisher('/bocas', Marker, queue_size=1)
+        self.pub_debug = rospy.Publisher('/t_debug', String, queue_size=1)
 
         red_team = rospy.get_param('red_team')
         blue_team = rospy.get_param('blue_team')
@@ -60,16 +79,33 @@ class Player:
 
         max_vel, max_angle = msg.turtle, math.pi / 30
 
-        if msg.red_alive:  # PURSUIT MODE: Follow any blue player (only if there is at least one blue alive)
-            target = msg.red_alive[0]  # select the first alive blue player (I am hunting blue)
-            distance, angle = self.get_distance_and_angle_to_target(target)
+        if self.target != "":
+            distance, angle = self.get_distance_and_angle_to_target(self.target)
+            self.pub_debug.publish("I going after target {}".format(self.target))
+        elif msg.red_alive:  # PURSUIT MODE: Follow any blue player (only if there is at least one blue alive)
+            #target = msg.red_alive[0]  # select the first alive blue player (I am hunting blue)
+            # distance, angle = self.get_distance_and_angle_to_target(target)
+            distance_short = 100
+            for user in msg.red_alive:
+                distance, angle = self.get_distance_and_angle_to_target(user)
+                if distance <= distance_short:
+                    self.target = user
+            self.pub_debug.publish("I going after the closest target {}".format(self.target))
             if angle is None:
                 angle = 0
             vel = max_vel  # full throttle
+            # Marker
+            self.m.header.stamp = rospy.Time.now()
+            self.m.text = "I'm going to get {}".format(self.target)
+            self.pub_bocas.publish(self.m)
         else:  # what else to do? Lets just move towards the center
             target = 'world'
             distance, angle = self.get_distance_and_angle_to_target(target)
             vel = max_vel  # full throttle
+            # Marker
+            self.m.header.stamp = rospy.Time.now()
+            self.m.text = "where's everyone?"
+            self.pub_bocas.publish(self.m)
 
         # Actually move the player
         self.move_player(self.br, self.player_name, self.transform, vel, angle, velocity)
