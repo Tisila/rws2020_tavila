@@ -55,7 +55,7 @@ class Player:
         # print("[MakeAPlay] the speed of cat is {}".format(msg.cat))
         self.max_vel = msg.turtle
         # Make a play decision making
-        velocity = self.max_vel
+        velocity = random.uniform(0, self.max_vel)
         angle = random.uniform(-self.max_angle, self.max_angle)
         print("[{}] going to turn {} degrees at {} speed".format(self.player_name, angle, velocity))
         self.move(self.transform, velocity, angle)
