@@ -6,7 +6,10 @@ import rospy
 import tf
 from geometry_msgs.msg import Transform, Quaternion
 from rws2020_msgs.msg import MakeAPlay
-from std_msgs.msg import String
+import sys
+#sys.path.append('../../../rws2020_moliveira/rws2020_lib/src')
+#from rws2020_lib.utils import movePlayer, randomizePlayerPose, getDistanceAndAngleToTarget
+#from std_msgs.msg import String
 
 
 class Player:
@@ -15,8 +18,7 @@ class Player:
         self.map_size = 8
         self.max_angle = math.pi / 30
         # Attributes initiated after...
-        self.max_vel = 0
-        self.max_angle = 0
+        self.max_vel = 5
         self.transform = Transform()
 
         red_team = rospy.get_param('red_team')
@@ -46,15 +48,15 @@ class Player:
         rospy.Subscriber("make_a_play", MakeAPlay, self.callback_make_a_play)
         self.br = tf.TransformBroadcaster()
         self.transform = Transform()
-        self.transform.translation.x = random.uniform(-self.map_size, self.map_size)
-        self.transform.translation.y = random.uniform(-self.map_size, self.map_size)
+        self.transform.translation.x = random.uniform(-self.map_size/2, self.map_size/2)
+        self.transform.translation.y = random.uniform(-self.map_size/2, self.map_size/2)
 
     def callback_make_a_play(self, msg):
         # print("[MakeAPlay] the speed of cat is {}".format(msg.cat))
         self.max_vel = msg.turtle
         # Make a play decision making
-        velocity = random.uniform(0, self.max_vel)
-        angle = self.max_angle
+        velocity = self.max_vel
+        angle = random.uniform(-self.max_angle, self.max_angle)
         print("[{}] going to turn {} degrees at {} speed".format(self.player_name, angle, velocity))
         self.move(self.transform, velocity, angle)
 
