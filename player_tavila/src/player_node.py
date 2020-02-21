@@ -4,6 +4,7 @@ import random
 import numpy
 import rospy
 import tf
+import np
 from geometry_msgs.msg import Transform, Quaternion
 from rws2020_msgs.msg import MakeAPlay
 import sys
@@ -77,7 +78,7 @@ class Player:
     def get_distance_and_angle_to_target(self, target_name, time=rospy.Time(0), max_time_to_wait=1.0):
         try:
             self.listener.waitForTransform(self.player_name, target_name, time, rospy.Duration(int(max_time_to_wait)))
-            (trans, rot) = self.listener.lookupTransform(my_name, target_name, time)
+            (trans, rot) = self.listener.lookupTransform(self.player_name, target_name, time)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException, tf.Exception):
             #rospy.logwarn(my_name + ': Could not get transform from ' + self.player_name + ' to ' + target_name)
             return None, None
