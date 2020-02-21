@@ -39,7 +39,7 @@ class Player:
         self.m.text = "Nada a declarar"
         self.m.lifetime = rospy.Duration(3)
         self.pub_bocas = rospy.Publisher('/bocas', Marker, queue_size=1)
-        self.pub_debug = rospy.Publisher('/t_debug', String, queue_size=1)
+        #self.pub_debug = rospy.Publisher('/t_debug', String, queue_size=1)
 
         red_team = rospy.get_param('red_team')
         blue_team = rospy.get_param('blue_team')
@@ -77,38 +77,34 @@ class Player:
         # Make a play decision making
         velocity = self.max_vel
 
-        max_vel, max_angle = msg.turtle, math.pi / 30
-
         if self.target != "":
             distance, angle = self.get_distance_and_angle_to_target(self.target)
-            self.pub_debug.publish("I going after target {}".format(self.target))
+            #self.pub_debug.publish("I going after target {}".format(self.target))
         elif msg.red_alive:  # PURSUIT MODE: Follow any blue player (only if there is at least one blue alive)
-            #target = msg.red_alive[0]  # select the first alive blue player (I am hunting blue)
-            # distance, angle = self.get_distance_and_angle_to_target(target)
-            distance_short = 100
-            for user in msg.red_alive:
-                distance, angle = self.get_distance_and_angle_to_target(user)
-                if distance <= distance_short:
-                    self.target = user
-            self.pub_debug.publish("I going after the closest target {}".format(self.target))
+            target = msg.red_alive[0]  # select the first alive blue player (I am hunting blue)
+            distance, angle = self.get_distance_and_angle_to_target(target)
+            #distance_short = 100
+            #for user in msg.red_alive:
+            #    distance, angle = self.get_distance_and_angle_to_target(user)
+            #    if distance <= distance_short:
+            #        self.target = user
+            #self.pub_debug.publish("I going after the closest target {}".format(self.target))
             if angle is None:
                 angle = 0
-            vel = max_vel  # full throttle
             # Marker
-            self.m.header.stamp = rospy.Time.now()
-            self.m.text = "I'm going to get {}".format(self.target)
-            self.pub_bocas.publish(self.m)
+            #self.m.header.stamp = rospy.Time.now()
+            #self.m.text = "I'm going to get {}".format(self.target)
+            #self.pub_bocas.publish(self.m)
         else:  # what else to do? Lets just move towards the center
             target = 'world'
             distance, angle = self.get_distance_and_angle_to_target(target)
-            vel = max_vel  # full throttle
             # Marker
-            self.m.header.stamp = rospy.Time.now()
-            self.m.text = "where's everyone?"
-            self.pub_bocas.publish(self.m)
+            #self.m.header.stamp = rospy.Time.now()
+            #self.m.text = "where's everyone?"
+            #self.pub_bocas.publish(self.m)
 
         # Actually move the player
-        self.move_player(self.br, self.player_name, self.transform, vel, angle, velocity)
+        self.move_player(self.br, self.player_name, self.transform, velocity, angle, velocity)
 
     def get_distance_and_angle_to_target(self, target_name, time=rospy.Time(0), max_time_to_wait=1.0):
         try:
