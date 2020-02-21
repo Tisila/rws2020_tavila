@@ -20,6 +20,7 @@ class Player:
         # Attributes initiated after...
         self.max_vel = 5
         self.transform = Transform()
+        self.listener = tf.TransformListener()
 
         red_team = rospy.get_param('red_team')
         blue_team = rospy.get_param('blue_team')
@@ -61,25 +62,24 @@ class Player:
 
         if msg.red_alive:  # PURSUIT MODE: Follow any blue player (only if there is at least one blue alive)
             target = msg.red_alive[0]  # select the first alive blue player (I am hunting blue)
-            distance, angle = self.get_distance_and_angle_to_target(self.listener, self.player_name, target)
+            distance, angle = self.get_distance_and_angle_to_target(target)
             if angle is None:
                 angle = 0
             vel = max_vel  # full throttle
         else:  # what else to do? Lets just move towards the center
             target = 'world'
-            distance, angle = self.get_distance_and_angle_to_target(self.listener, self.player_name, target)
+            distance, angle = self.get_distance_and_angle_to_target(target)
             vel = max_vel  # full throttle
 
         # Actually move the player
         self.move_player(self.br, self.player_name, self.transform, vel, angle, velocity)
 
-    def get_distance_and_angle_to_target(self, tf_listener, my_name, target_name,
-                                    time=rospy.Time(0), max_time_to_wait=1.0):
+    def get_distance_and_angle_to_target(self, target_name, time=rospy.Time(0), max_time_to_wait=1.0):
         try:
-            tf_listener.waitForTransform(my_name, target_name, time, rospy.Duration(max_time_to_wait))
-            (trans, rot) = tf_listener.lookupTransform(my_name, target_name, time)
+            self.listener.waitForTransform(self.player_name, target_name, time, rospy.Duration(int(max_time_to_wait)))
+            (trans, rot) = self.listener.lookupTransform(my_name, target_name, time)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException, tf.Exception):
-            rospy.logwarn(my_name + ': Could not get transform from ' + my_name + ' to ' + target_name)
+            #rospy.logwarn(my_name + ': Could not get transform from ' + self.player_name + ' to ' + target_name)
             return None, None
 
         # compute distance and angle
