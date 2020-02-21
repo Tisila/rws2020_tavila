@@ -1,10 +1,9 @@
 #!/usr/bin/python
 import math
 import random
-import numpy
+import numpy as np
 import rospy
 import tf
-import np
 from geometry_msgs.msg import Transform, Quaternion
 from rws2020_msgs.msg import MakeAPlay
 import sys
