@@ -27,7 +27,7 @@ class Player:
 
         # Marker data
         self.m = Marker(ns=self.player_name, id=0, type=Marker.TEXT_VIEW_FACING, action=Marker.ADD)
-        self.m.header.frame_id = "moliveira"
+        self.m.header.frame_id = self.player_name
         self.m.header.stamp = rospy.Time.now()
         self.m.pose.position.y = 1
         self.m.pose.orientation.w = 1.0
@@ -92,16 +92,16 @@ class Player:
             if angle is None:
                 angle = 0
             # Marker
-            #self.m.header.stamp = rospy.Time.now()
-            #self.m.text = "I'm going to get {}".format(self.target)
-            #self.pub_bocas.publish(self.m)
+            self.m.header.stamp = rospy.Time.now()
+            self.m.text = "I'm going to get {}".format(self.target)
+            self.pub_bocas.publish(self.m)
         else:  # what else to do? Lets just move towards the center
             target = 'world'
             distance, angle = self.get_distance_and_angle_to_target(target)
             # Marker
-            #self.m.header.stamp = rospy.Time.now()
-            #self.m.text = "where's everyone?"
-            #self.pub_bocas.publish(self.m)
+            self.m.header.stamp = rospy.Time.now()
+            self.m.text = "where's everyone?"
+            self.pub_bocas.publish(self.m)
 
         # Actually move the player
         self.move_player(self.br, self.player_name, self.transform, velocity, angle, velocity)
