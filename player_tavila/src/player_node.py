@@ -49,14 +49,20 @@ class Player:
         # rospy.loginfo("I am afraid of them {}".format(self.hunters))
 
         rospy.Subscriber("make_a_play", MakeAPlay, self.callback_make_a_play)
-        self.warp_server = rospy.Service('warp', Warp, self.warp_service_callback)
+        self.warp_server = rospy.Service('~warp', Warp, self.warp_service_callback)
         self.br = tf.TransformBroadcaster()
         self.transform = Transform()
         self.transform.translation.x = random.uniform(-self.map_size / 2, self.map_size / 2)
         self.transform.translation.y = random.uniform(-self.map_size / 2, self.map_size / 2)
 
     def warp_service_callback(self, req):
-        rospy.loginfo('Someone called the service for {}'.format(req.player))
+        rospy.loginfo('The referee sent me to x={} y={}'.format(req.x, req.y))
+        quat = (0, 0, 0, 1)
+        trans = (req.x, req.y, 0)
+        self.br.sendTransform(trans, quat, rospy.Time.now(), self.player_name, "world")
+        response = WarpResponse()
+        response.success = True
+        return response
 
     def set_team_assignments(self):
         """
