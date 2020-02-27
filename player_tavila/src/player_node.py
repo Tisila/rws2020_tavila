@@ -7,6 +7,7 @@ import tf
 from geometry_msgs.msg import Transform, Quaternion
 from visualization_msgs.msg import Marker
 from rws2020_msgs.msg import MakeAPlay
+from rws2020_msgs.srv import Warp, WarpResponse
 from std_msgs.msg import String
 import sys
 #sys.path.append('../../../rws2020_moliveira/rws2020_lib/src')
@@ -41,6 +42,26 @@ class Player:
         self.pub_bocas = rospy.Publisher('/bocas', Marker, queue_size=1)
         #self.pub_debug = rospy.Publisher('/t_debug', String, queue_size=1)
 
+        self.set_team_assignments()
+
+        # rospy.logwarn("I am {} and I am on the {} team. {} players are going to die"
+        #              .format(self.player_name, self.my_team, self.prey_team))
+        # rospy.loginfo("I am afraid of them {}".format(self.hunters))
+
+        rospy.Subscriber("make_a_play", MakeAPlay, self.callback_make_a_play)
+        self.warp_server = rospy.Service('warp', Warp, self.warp_service_callback)
+        self.br = tf.TransformBroadcaster()
+        self.transform = Transform()
+        self.transform.translation.x = random.uniform(-self.map_size / 2, self.map_size / 2)
+        self.transform.translation.y = random.uniform(-self.map_size / 2, self.map_size / 2)
+
+    def warp_service_callback(self, req):
+        rospy.loginfo('Someone called the service for {}'.format(req.player))
+
+    def set_team_assignments(self):
+        """
+        Finds the player name in the team lists and defines whos hunter or prey
+        """
         red_team = rospy.get_param('red_team')
         blue_team = rospy.get_param('blue_team')
         green_team = rospy.get_param('green_team')
