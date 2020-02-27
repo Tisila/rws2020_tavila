@@ -82,13 +82,17 @@ class Player:
         if self.target != "":
             distance, angle = self.get_distance_and_angle_to_target(self.target)
         elif msg.red_alive:  # PURSUIT MODE: Follow any blue player (only if there is at least one blue alive)
-            self.get_closest_player_from_team(msg.red_alive)
-            if angle is None:
-                angle = 0
-            # Marker
-            self.m.header.stamp = rospy.Time.now()
-            self.m.text = "I'm going to get {}".format(self.target)
-            self.pub_bocas.publish(self.m)
+            if not msg.red_alive:
+                target = 'world'
+                distance, angle = self.get_distance_and_angle_to_target(target)
+            else:
+                self.get_closest_player_from_team(msg.red_alive)
+                if angle is None:
+                    angle = 0
+                # Marker
+                self.m.header.stamp = rospy.Time.now()
+                self.m.text = "I'm going to get {}".format(self.target)
+                self.pub_bocas.publish(self.m)
         else:  # what else to do? Lets just move towards the center
             target = 'world'
             distance, angle = self.get_distance_and_angle_to_target(target)
